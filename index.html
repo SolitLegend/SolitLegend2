@@ -113,10 +113,23 @@
       bgMusic.play().catch(() => {});
     }, { once: true });
 
-    restartBtn.addEventListener("click", restartGame);
-    homeBtn.addEventListener("click", () => {
+    restartBtn.onclick = function() {
+      totalCoins += sessionCoins;
+      localStorage.setItem("solitCoins", totalCoins);
+      sessionCoins = 0;
+      document.getElementById("coins").innerText = totalCoins;
+      bird.y = 250;
+      bird.velocity = 0;
+      pipes = [];
+      coin = null;
+      pipeCounter = 0;
+      isGameOver = false;
+      gameOverMenu.style.display = "none";
+    };
+
+    homeBtn.onclick = function() {
       window.location.href = "https://solitlegend.github.io/SolitLegend/";
-    });
+    };
 
     function drawBird() {
       ctx.save();
@@ -205,20 +218,6 @@
     function endGame() {
       isGameOver = true;
       gameOverMenu.style.display = "block";
-    }
-
-    function restartGame() {
-      totalCoins += sessionCoins;
-      localStorage.setItem("solitCoins", totalCoins);
-      sessionCoins = 0;
-      document.getElementById("coins").innerText = totalCoins;
-      bird.y = 250;
-      bird.velocity = 0;
-      pipes = [];
-      coin = null;
-      pipeCounter = 0;
-      isGameOver = false;
-      gameOverMenu.style.display = "none";
     }
 
     function draw() {
