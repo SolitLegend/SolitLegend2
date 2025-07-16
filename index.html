@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Flappy Coin Game - Solit Legend</title>
   <style>
     html, body {
@@ -10,34 +10,33 @@
       padding: 0;
       overflow: hidden;
       background-color: #70c5ce;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
     canvas {
       display: block;
       margin: auto;
       background: url('https://i.postimg.cc/4dmVNVWW/oFmrtZR.jpg') repeat-x;
       background-size: cover;
+      touch-action: manipulation;
+    }
+    #wallet, #volumeControl {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 8px;
+      z-index: 2;
     }
     #wallet {
-      position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      padding: 10px 15px;
-      border-radius: 8px;
       font-size: 18px;
-      z-index: 2;
     }
     #volumeControl {
-      position: absolute;
       top: 10px;
       right: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      padding: 10px 15px;
-      border-radius: 8px;
       font-size: 14px;
-      z-index: 2;
     }
     #volumeSlider {
       width: 100px;
@@ -127,13 +126,13 @@
     }
 
     function drawCoin() {
-  if (coin) {
-    ctx.beginPath();
-    ctx.fillStyle = 'gold';
-    ctx.arc(coin.x, coin.y, 16, 0, Math.PI * 2); // Bigger coin
-    ctx.fill();
-  }
-}
+      if (coin) {
+        ctx.beginPath();
+        ctx.fillStyle = 'gold';
+        ctx.arc(coin.x, coin.y, 16, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
     function updateGame() {
       if (isGameOver) return;
@@ -146,27 +145,23 @@
       }
 
       if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-  let top = Math.floor(Math.random() * 250) + 30;
-  pipes.push({ x: canvas.width, top });
+        let top = Math.floor(Math.random() * 250) + 30;
+        pipes.push({ x: canvas.width, top });
 
-  // ➤ Insert coin when game starts
-  if (pipeCounter === 0 || pipeCounter % 4 === 0) {
-    coin = {
-      x: canvas.width + 60,
-      y: top + pipeGap / 2
-    };
-  }
-
-  pipeCounter++;
-}
+        if (pipeCounter === 0 || pipeCounter % 4 === 0) {
+          coin = {
+            x: canvas.width + 60,
+            y: top + pipeGap / 2
+          };
+        }
+        pipeCounter++;
+      }
 
       pipes.forEach((pipe, index) => {
         pipe.x -= pipeSpeed;
-
         if (pipe.x + pipeWidth < 0) {
           pipes.splice(index, 1);
         }
-
         if (
           bird.x < pipe.x + pipeWidth &&
           bird.x + bird.width > pipe.x &&
@@ -233,9 +228,15 @@
       requestAnimationFrame(loop);
     }
 
-    document.addEventListener("keydown", () => bird.velocity = jump);
-    document.addEventListener("mousedown", () => bird.velocity = jump);
-    document.addEventListener("touchstart", () => bird.velocity = jump);
+    // ✅ Clean unified input handler
+    function handleJump(e) {
+      e.preventDefault();
+      bird.velocity = jump;
+    }
+
+    document.addEventListener("keydown", handleJump);
+    document.addEventListener("mousedown", handleJump);
+    document.addEventListener("touchstart", handleJump, { passive: false });
 
     document.getElementById("coins").innerText = totalCoins;
     loop();
