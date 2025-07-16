@@ -113,23 +113,39 @@
       bgMusic.play().catch(() => {});
     }, { once: true });
 
-    restartBtn.onclick = function() {
-      totalCoins += sessionCoins;
-      localStorage.setItem("solitCoins", totalCoins);
-      sessionCoins = 0;
-      document.getElementById("coins").innerText = totalCoins;
-      bird.y = 250;
-      bird.velocity = 0;
-      pipes = [];
-      coin = null;
-      pipeCounter = 0;
-      isGameOver = false;
-      gameOverMenu.style.display = "none";
-    };
+    restartBtn.onclick = function () {
+  totalCoins += sessionCoins;
+  localStorage.setItem("solitCoins", totalCoins);
+  document.getElementById("coins").innerText = totalCoins;
 
-    homeBtn.onclick = function() {
-      window.location.href = "https://solitlegend.github.io/SolitLegend/";
-    };
+  const userName = localStorage.getItem('solitName');
+  if (userName && sessionCoins > 0) {
+    fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`);
+  }
+
+  sessionCoins = 0;
+  bird.y = 250;
+  bird.velocity = 0;
+  pipes = [];
+  coin = null;
+  pipeCounter = 0;
+  isGameOver = false;
+  gameOverMenu.style.display = "none";
+};
+
+homeBtn.onclick = function () {
+  const userName = localStorage.getItem('solitName');
+  if (userName && sessionCoins > 0) {
+    fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`)
+      .then(() => {
+        sessionCoins = 0;
+        window.location.href = "https://solitlegend.github.io/SolitLegend/";
+      });
+  } else {
+    window.location.href = "https://solitlegend.github.io/SolitLegend/";
+  }
+};
+
 
     function drawBird() {
       ctx.save();
