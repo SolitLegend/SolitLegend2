@@ -18,7 +18,6 @@
       margin: auto;
       background: url('https://i.postimg.cc/4dmVNVWW/oFmrtZR.jpg') repeat-x;
       background-size: cover;
-      touch-action: manipulation;
     }
     #wallet, #volumeControl {
       position: absolute;
@@ -72,8 +71,8 @@
   <canvas id="game" width="480" height="640"></canvas>
   <div id="gameOverMenu">
     <h2>Game Over</h2>
-    <button onclick="restartGame()">Restart</button>
-    <button onclick="goHome()">Go Back Home</button>
+    <button id="restartBtn">Restart</button>
+    <button id="homeBtn">Go Back Home</button>
   </div>
   <audio id="coinSound" src="https://www.fesliyanstudios.com/play-mp3/387" preload="auto"></audio>
   <audio id="bgMusic" src="https://www.bensound.com/bensound-music/bensound-ukulele.mp3" autoplay loop></audio>
@@ -85,11 +84,13 @@
     const bgMusic = document.getElementById("bgMusic");
     const volumeSlider = document.getElementById("volumeSlider");
     const gameOverMenu = document.getElementById("gameOverMenu");
+    const restartBtn = document.getElementById("restartBtn");
+    const homeBtn = document.getElementById("homeBtn");
 
     const pipeWidth = 60;
     const pipeGap = 150;
-    const gravity = 0.4;
-    const jump = -5;
+    const gravity = 0.35;
+    const jump = -4.8;
     const pipeSpeed = 1;
 
     let totalCoins = parseInt(localStorage.getItem('solitCoins')) || 0;
@@ -107,6 +108,15 @@
       bgMusic.volume = volumeSlider.value;
     });
     bgMusic.volume = volumeSlider.value;
+
+    document.addEventListener("touchstart", () => {
+      bgMusic.play().catch(() => {});
+    }, { once: true });
+
+    restartBtn.addEventListener("click", restartGame);
+    homeBtn.addEventListener("click", () => {
+      window.location.href = "https://solitlegend.github.io/SolitLegend/";
+    });
 
     function drawBird() {
       ctx.save();
@@ -211,10 +221,6 @@
       gameOverMenu.style.display = "none";
     }
 
-    function goHome() {
-      window.location.href = "/";
-    }
-
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawPipes();
@@ -228,7 +234,6 @@
       requestAnimationFrame(loop);
     }
 
-    // ✅ Clean unified input handler
     function handleJump(e) {
       e.preventDefault();
       bird.velocity = jump;
