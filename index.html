@@ -3,263 +3,197 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flappy Coin Game - Solit Legend</title>
+  <title>Solit Jump Game</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background-color: #70c5ce;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
+      height: 100%;
+      background: url('https://i.ibb.co/BZj2fs1/solit-bg.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', sans-serif;
     }
     canvas {
       display: block;
       margin: auto;
-      background: url('https://i.postimg.cc/4dmVNVWW/oFmrtZR.jpg') repeat-x;
-      background-size: cover;
-    }
-    #wallet, #volumeControl {
-      position: absolute;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      padding: 10px 15px;
-      border-radius: 8px;
-      z-index: 2;
+      background: transparent;
     }
     #wallet {
-      top: 10px;
-      left: 10px;
-      font-size: 18px;
-    }
-    #volumeControl {
+      position: fixed;
       top: 10px;
       right: 10px;
-      font-size: 14px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 16px;
+      z-index: 1000;
     }
-    #volumeSlider {
-      width: 100px;
-    }
-    #gameOverMenu {
-      position: absolute;
+    #gameOver {
+      position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
+      background: #000000d3;
       color: #fff;
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
       display: none;
-      z-index: 3;
+      z-index: 1000;
     }
-    #gameOverMenu button {
-      margin: 10px;
+    #gameOver button {
+      margin-top: 10px;
       padding: 10px 20px;
-      font-size: 16px;
       border: none;
-      border-radius: 5px;
-      cursor: pointer;
+      background: gold;
+      border-radius: 10px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
-  <div id="wallet">Coins: <span id="coins">0</span></div>
-  <div id="volumeControl">
-    Music Volume: <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
-  </div>
-  <canvas id="game" width="480" height="640"></canvas>
-  <div id="gameOverMenu">
-    <h2>Game Over</h2>
-    <button id="restartBtn">Restart</button>
-    <button id="homeBtn">Go Back Home</button>
-  </div>
-  <audio id="coinSound" src="https://www.fesliyanstudios.com/play-mp3/387" preload="auto"></audio>
-  <audio id="bgMusic" src="https://www.bensound.com/bensound-music/bensound-ukulele.mp3" autoplay loop></audio>
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    const coinSound = document.getElementById("coinSound");
-    const bgMusic = document.getElementById("bgMusic");
-    const volumeSlider = document.getElementById("volumeSlider");
-    const gameOverMenu = document.getElementById("gameOverMenu");
-    const restartBtn = document.getElementById("restartBtn");
-    const homeBtn = document.getElementById("homeBtn");
+<div id="wallet">💰 Coins: <span id="coinCount">0</span></div>
+<div id="gameOver">
+  <h2>Game Over</h2>
+  <p>You earned <span id="earned">0</span> coins</p>
+  <button onclick="restartGame()">Play Again</button>
+</div>
+<canvas id="gameCanvas" width="360" height="600"></canvas>
 
-    const pipeWidth = 60;
-    const pipeGap = 150;
-    const gravity = 0.40;
-    const jump = -6;
-    const pipeSpeed = 1;
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
 
-    let totalCoins = parseInt(localStorage.getItem('solitCoins')) || 0;
-    let sessionCoins = 0;
+  const bird = { x: 50, y: 150, width: 30, height: 30, velocity: 0 };
+  const gravity = 0.40;
+  const jumpStrength = -6;
+  const pipes = [];
+  let score = 0;
+  let gameOver = false;
 
-    let bird = { x: 80, y: 250, width: 34, height: 34, velocity: 0 };
-    let pipes = [];
-    let coin = null;
-    let pipeCounter = 0;
-    let isGameOver = false;
+  let totalCoins = parseInt(localStorage.getItem("totalCoins")) || 0;
+  let today = new Date().toLocaleDateString();
+  let todayCoins = JSON.parse(localStorage.getItem("todayCoins")) || { date: today, coins: 0 };
 
-    const birdEmoji = "🐦";
+  if (todayCoins.date !== today) {
+    todayCoins = { date: today, coins: 0 };
+  }
 
-    volumeSlider.addEventListener("input", () => {
-      bgMusic.volume = volumeSlider.value;
+  document.getElementById("coinCount").innerText = totalCoins;
+
+  function drawBird() {
+    ctx.fillStyle = "#ffcc00";
+    ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+  }
+
+  function drawPipes() {
+    ctx.fillStyle = "#00cc66";
+    pipes.forEach(pipe => {
+      ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+      ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipe.width, pipe.bottom);
     });
-    bgMusic.volume = volumeSlider.value;
-
-    document.addEventListener("touchstart", () => {
-      bgMusic.play().catch(() => {});
-    }, { once: true });
-
-    restartBtn.onclick = function () {
-  totalCoins += sessionCoins;
-  localStorage.setItem("solitCoins", totalCoins);
-  document.getElementById("coins").innerText = totalCoins;
-
-  const userName = localStorage.getItem('solitName');
-  if (userName && sessionCoins > 0) {
-    fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`);
   }
 
-  sessionCoins = 0;
-  bird.y = 250;
-  bird.velocity = 0;
-  pipes = [];
-  coin = null;
-  pipeCounter = 0;
-  isGameOver = false;
-  gameOverMenu.style.display = "none";
-};
-
-homeBtn.onclick = function () {
-  const userName = localStorage.getItem('solitName');
-  if (userName && sessionCoins > 0) {
-    fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`)
-      .then(() => {
-        sessionCoins = 0;
-        window.location.href = "https://solitlegend.github.io/SolitLegend/";
-      });
-  } else {
-    window.location.href = "https://solitlegend.github.io/SolitLegend/";
+  function addPipe() {
+    const pipeGap = 140;
+    const pipeTop = Math.random() * (canvas.height - pipeGap - 100) + 50;
+    const pipeBottom = canvas.height - pipeTop - pipeGap;
+    pipes.push({ x: canvas.width, width: 50, top: pipeTop, bottom: pipeBottom });
   }
-};
 
-
-    function drawBird() {
-      ctx.save();
-      ctx.translate(bird.x + bird.width, bird.y);
-      ctx.scale(-1, 1);
-      ctx.font = `${bird.width}px serif`;
-      ctx.fillText(birdEmoji, 0, bird.height);
-      ctx.restore();
+  function updatePipes() {
+    pipes.forEach(pipe => pipe.x -= 2);
+    if (pipes.length && pipes[0].x + pipes[0].width < 0) {
+      pipes.shift();
+      earnCoins(5);
     }
+    if (pipes.length < 3 || pipes[pipes.length - 1].x < canvas.width - 200) {
+      addPipe();
+    }
+  }
 
-    function drawPipes() {
-      ctx.fillStyle = 'purple';
-      pipes.forEach(pipe => {
-        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-        ctx.fillRect(pipe.x, pipe.top + pipeGap, pipeWidth, canvas.height);
+  function earnCoins(amount) {
+    if (todayCoins.coins + amount <= 500) {
+      totalCoins += amount;
+      todayCoins.coins += amount;
+      localStorage.setItem("totalCoins", totalCoins);
+      localStorage.setItem("todayCoins", JSON.stringify(todayCoins));
+      document.getElementById("coinCount").innerText = totalCoins;
+      document.getElementById("earned").innerText = amount;
+
+      let solitName = localStorage.getItem("solitName") || "Unknown";
+
+      fetch("https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec", {
+        method: "POST",
+        body: JSON.stringify({
+          name: solitName,
+          coins: amount,
+          reason: "Game",
+        }),
       });
     }
+  }
 
-    function drawCoin() {
-      if (coin) {
-        ctx.beginPath();
-        ctx.fillStyle = 'gold';
-        ctx.arc(coin.x, coin.y, 16, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+  function detectCollision(pipe) {
+    const inX = bird.x + bird.width > pipe.x && bird.x < pipe.x + pipe.width;
+    const hitTop = bird.y < pipe.top;
+    const hitBottom = bird.y + bird.height > canvas.height - pipe.bottom;
+    return inX && (hitTop || hitBottom);
+  }
 
-    function updateGame() {
-      if (isGameOver) return;
+  function endGame() {
+    gameOver = true;
+    document.getElementById("gameOver").style.display = "block";
+  }
 
-      bird.velocity += gravity;
-      bird.y += bird.velocity;
-
-      if (bird.y + bird.height > canvas.height || bird.y < 0) {
-        return endGame();
-      }
-
-      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-        let top = Math.floor(Math.random() * 250) + 30;
-        pipes.push({ x: canvas.width, top });
-
-        if (pipeCounter === 0 || pipeCounter % 4 === 0) {
-          coin = {
-            x: canvas.width + 60,
-            y: top + pipeGap / 2
-          };
-        }
-        pipeCounter++;
-      }
-
-      pipes.forEach((pipe, index) => {
-        pipe.x -= pipeSpeed;
-        if (pipe.x + pipeWidth < 0) {
-          pipes.splice(index, 1);
-        }
-        if (
-          bird.x < pipe.x + pipeWidth &&
-          bird.x + bird.width > pipe.x &&
-          (bird.y < pipe.top || bird.y + bird.height > pipe.top + pipeGap)
-        ) {
-          endGame();
-        }
-      });
-
-      if (coin) {
-        coin.x -= pipeSpeed;
-
-        if (
-          bird.x < coin.x + 12 &&
-          bird.x + bird.width > coin.x - 12 &&
-          bird.y < coin.y + 12 &&
-          bird.y + bird.height > coin.y - 12
-        ) {
-          sessionCoins++;
-          document.getElementById("coins").innerText = totalCoins + sessionCoins;
-          coinSound.play();
-          coin = null;
-        }
-
-        if (coin && coin.x < -20) {
-          coin = null;
-        }
-      }
-    }
-
-    function endGame() {
-      isGameOver = true;
-      gameOverMenu.style.display = "block";
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawPipes();
-      drawCoin();
-      drawBird();
-    }
-
-    function loop() {
-      updateGame();
-      draw();
-      requestAnimationFrame(loop);
-    }
-
-    function handleJump(e) {
-      e.preventDefault();
-      bird.velocity = jump;
-    }
-
-    document.addEventListener("keydown", handleJump);
-    document.addEventListener("mousedown", handleJump);
-    document.addEventListener("touchstart", handleJump, { passive: false });
-
-    document.getElementById("coins").innerText = totalCoins;
+  function restartGame() {
+    bird.y = 150;
+    bird.velocity = 0;
+    pipes.length = 0;
+    addPipe();
+    gameOver = false;
+    document.getElementById("gameOver").style.display = "none";
     loop();
-  </script>
+  }
+
+  function loop() {
+    if (gameOver) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    bird.velocity += gravity;
+    bird.y += bird.velocity;
+
+    if (bird.y + bird.height > canvas.height || bird.y < 0) {
+      endGame();
+    }
+
+    updatePipes();
+    pipes.forEach(pipe => {
+      if (detectCollision(pipe)) {
+        endGame();
+      }
+    });
+
+    drawPipes();
+    drawBird();
+
+    requestAnimationFrame(loop);
+  }
+
+  canvas.addEventListener("touchstart", () => {
+    if (!gameOver) bird.velocity = jumpStrength;
+  });
+
+  // Optional: for mouse/tap testing
+  // canvas.addEventListener("mousedown", () => {
+  //   if (!gameOver) bird.velocity = jumpStrength;
+  // });
+
+  addPipe();
+  loop();
+</script>
+
 </body>
 </html>
