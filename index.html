@@ -18,6 +18,7 @@
       margin: auto;
       background: url('https://i.postimg.cc/4dmVNVWW/oFmrtZR.jpg') repeat-x;
       background-size: cover;
+      pointer-events: none; /* allow buttons to be clickable */
     }
     #wallet, #volumeControl {
       position: absolute;
@@ -52,6 +53,7 @@
       color: #fff;
       display: none;
       z-index: 3;
+      pointer-events: auto; /* ensure buttons work */
     }
     #gameOverMenu button {
       margin: 10px;
@@ -60,6 +62,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      touch-action: manipulation;
     }
   </style>
 </head>
@@ -78,188 +81,189 @@
   <audio id="bgMusic" src="https://www.bensound.com/bensound-music/bensound-ukulele.mp3" autoplay loop></audio>
 
   <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    const coinSound = document.getElementById("coinSound");
-    const bgMusic = document.getElementById("bgMusic");
-    const volumeSlider = document.getElementById("volumeSlider");
-    const gameOverMenu = document.getElementById("gameOverMenu");
-    const restartBtn = document.getElementById("restartBtn");
-    const homeBtn = document.getElementById("homeBtn");
+    window.onload = function () {
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const coinSound = document.getElementById("coinSound");
+      const bgMusic = document.getElementById("bgMusic");
+      const volumeSlider = document.getElementById("volumeSlider");
+      const gameOverMenu = document.getElementById("gameOverMenu");
+      const restartBtn = document.getElementById("restartBtn");
+      const homeBtn = document.getElementById("homeBtn");
 
-    const pipeWidth = 60;
-    const pipeGap = 150;
-    const gravity = 0.40;
-    const jump = -6;
-    const pipeSpeed = 1;
+      const pipeWidth = 60;
+      const pipeGap = 150;
+      const gravity = 0.40;
+      const jump = -6;
+      const pipeSpeed = 1;
 
-    let totalCoins = parseInt(localStorage.getItem('solitCoins')) || 0;
-    let sessionCoins = 0;
+      let totalCoins = parseInt(localStorage.getItem('solitCoins')) || 0;
+      let sessionCoins = 0;
 
-    let bird = { x: 80, y: 250, width: 34, height: 34, velocity: 0 };
-    let pipes = [];
-    let coin = null;
-    let pipeCounter = 0;
-    let isGameOver = false;
+      let bird = { x: 80, y: 250, width: 34, height: 34, velocity: 0 };
+      let pipes = [];
+      let coin = null;
+      let pipeCounter = 0;
+      let isGameOver = false;
 
-    const birdEmoji = "🐦";
+      const birdEmoji = "🐦";
 
-    volumeSlider.addEventListener("input", () => {
+      volumeSlider.addEventListener("input", () => {
+        bgMusic.volume = volumeSlider.value;
+      });
       bgMusic.volume = volumeSlider.value;
-    });
-    bgMusic.volume = volumeSlider.value;
 
-    document.addEventListener("touchstart", () => {
-      bgMusic.play().catch(() => {});
-    }, { once: true });
+      canvas.addEventListener("touchstart", () => {
+        bgMusic.play().catch(() => {});
+      }, { once: true });
 
-    restartBtn.onclick = function () {
-  totalCoins += sessionCoins;
-  localStorage.setItem("solitCoins", totalCoins);
-  document.getElementById("coins").innerText = totalCoins;
+      restartBtn.onclick = function () {
+        totalCoins += sessionCoins;
+        localStorage.setItem("solitCoins", totalCoins);
+        document.getElementById("coins").innerText = totalCoins;
 
-  const userName = localStorage.getItem('solitName');
-  if (userName && sessionCoins > 0) {
-    fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`);
-  }
+        const userName = localStorage.getItem('solitName');
+        if (userName && sessionCoins > 0) {
+          fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`);
+        }
 
-  sessionCoins = 0;
-  bird.y = 250;
-  bird.velocity = 0;
-  pipes = [];
-  coin = null;
-  pipeCounter = 0;
-  isGameOver = false;
-  gameOverMenu.style.display = "none";
-};
-
-homeBtn.onclick = function () {
-  const userName = localStorage.getItem('solitName');
-  if (userName && sessionCoins > 0) {
-    fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`)
-      .then(() => {
         sessionCoins = 0;
-        window.location.href = "https://solitlegend.github.io/SolitLegend/";
-      });
-  } else {
-    window.location.href = "https://solitlegend.github.io/SolitLegend/";
-  }
-};
+        bird.y = 250;
+        bird.velocity = 0;
+        pipes = [];
+        coin = null;
+        pipeCounter = 0;
+        isGameOver = false;
+        gameOverMenu.style.display = "none";
+      };
 
+      homeBtn.onclick = function () {
+        const userName = localStorage.getItem('solitName');
+        if (userName && sessionCoins > 0) {
+          fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`)
+            .then(() => {
+              sessionCoins = 0;
+              window.location.href = "https://solitlegend.github.io/SolitLegend/";
+            });
+        } else {
+          window.location.href = "https://solitlegend.github.io/SolitLegend/";
+        }
+      };
 
-    function drawBird() {
-      ctx.save();
-      ctx.translate(bird.x + bird.width, bird.y);
-      ctx.scale(-1, 1);
-      ctx.font = `${bird.width}px serif`;
-      ctx.fillText(birdEmoji, 0, bird.height);
-      ctx.restore();
-    }
-
-    function drawPipes() {
-      ctx.fillStyle = 'purple';
-      pipes.forEach(pipe => {
-        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-        ctx.fillRect(pipe.x, pipe.top + pipeGap, pipeWidth, canvas.height);
-      });
-    }
-
-    function drawCoin() {
-      if (coin) {
-        ctx.beginPath();
-        ctx.fillStyle = 'gold';
-        ctx.arc(coin.x, coin.y, 16, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    function updateGame() {
-      if (isGameOver) return;
-
-      bird.velocity += gravity;
-      bird.y += bird.velocity;
-
-      if (bird.y + bird.height > canvas.height || bird.y < 0) {
-        return endGame();
+      function drawBird() {
+        ctx.save();
+        ctx.translate(bird.x + bird.width, bird.y);
+        ctx.scale(-1, 1);
+        ctx.font = `${bird.width}px serif`;
+        ctx.fillText(birdEmoji, 0, bird.height);
+        ctx.restore();
       }
 
-      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-        let top = Math.floor(Math.random() * 250) + 30;
-        pipes.push({ x: canvas.width, top });
-
-        if (pipeCounter === 0 || pipeCounter % 4 === 0) {
-          coin = {
-            x: canvas.width + 60,
-            y: top + pipeGap / 2
-          };
-        }
-        pipeCounter++;
+      function drawPipes() {
+        ctx.fillStyle = 'purple';
+        pipes.forEach(pipe => {
+          ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+          ctx.fillRect(pipe.x, pipe.top + pipeGap, pipeWidth, canvas.height);
+        });
       }
 
-      pipes.forEach((pipe, index) => {
-        pipe.x -= pipeSpeed;
-        if (pipe.x + pipeWidth < 0) {
-          pipes.splice(index, 1);
-        }
-        if (
-          bird.x < pipe.x + pipeWidth &&
-          bird.x + bird.width > pipe.x &&
-          (bird.y < pipe.top || bird.y + bird.height > pipe.top + pipeGap)
-        ) {
-          endGame();
-        }
-      });
-
-      if (coin) {
-        coin.x -= pipeSpeed;
-
-        if (
-          bird.x < coin.x + 12 &&
-          bird.x + bird.width > coin.x - 12 &&
-          bird.y < coin.y + 12 &&
-          bird.y + bird.height > coin.y - 12
-        ) {
-          sessionCoins++;
-          document.getElementById("coins").innerText = totalCoins + sessionCoins;
-          coinSound.play();
-          coin = null;
-        }
-
-        if (coin && coin.x < -20) {
-          coin = null;
+      function drawCoin() {
+        if (coin) {
+          ctx.beginPath();
+          ctx.fillStyle = 'gold';
+          ctx.arc(coin.x, coin.y, 16, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
-    }
 
-    function endGame() {
-      isGameOver = true;
-      gameOverMenu.style.display = "block";
-    }
+      function updateGame() {
+        if (isGameOver) return;
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawPipes();
-      drawCoin();
-      drawBird();
-    }
+        bird.velocity += gravity;
+        bird.y += bird.velocity;
 
-    function loop() {
-      updateGame();
-      draw();
-      requestAnimationFrame(loop);
-    }
+        if (bird.y + bird.height > canvas.height || bird.y < 0) {
+          return endGame();
+        }
 
-    function handleJump(e) {
-      e.preventDefault();
-      bird.velocity = jump;
-    }
+        if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+          let top = Math.floor(Math.random() * 250) + 30;
+          pipes.push({ x: canvas.width, top });
 
-    document.addEventListener("keydown", handleJump);
-    document.addEventListener("mousedown", handleJump);
-    document.addEventListener("touchstart", handleJump, { passive: false });
+          if (pipeCounter === 0 || pipeCounter % 4 === 0) {
+            coin = {
+              x: canvas.width + 60,
+              y: top + pipeGap / 2
+            };
+          }
+          pipeCounter++;
+        }
 
-    document.getElementById("coins").innerText = totalCoins;
-    loop();
+        pipes.forEach((pipe, index) => {
+          pipe.x -= pipeSpeed;
+          if (pipe.x + pipeWidth < 0) {
+            pipes.splice(index, 1);
+          }
+          if (
+            bird.x < pipe.x + pipeWidth &&
+            bird.x + bird.width > pipe.x &&
+            (bird.y < pipe.top || bird.y + bird.height > pipe.top + pipeGap)
+          ) {
+            endGame();
+          }
+        });
+
+        if (coin) {
+          coin.x -= pipeSpeed;
+
+          if (
+            bird.x < coin.x + 12 &&
+            bird.x + bird.width > coin.x - 12 &&
+            bird.y < coin.y + 12 &&
+            bird.y + bird.height > coin.y - 12
+          ) {
+            sessionCoins++;
+            document.getElementById("coins").innerText = totalCoins + sessionCoins;
+            coinSound.play();
+            coin = null;
+          }
+
+          if (coin && coin.x < -20) {
+            coin = null;
+          }
+        }
+      }
+
+      function endGame() {
+        isGameOver = true;
+        gameOverMenu.style.display = "block";
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawPipes();
+        drawCoin();
+        drawBird();
+      }
+
+      function loop() {
+        updateGame();
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      function handleJump(e) {
+        e.preventDefault();
+        bird.velocity = jump;
+      }
+
+      document.addEventListener("keydown", handleJump);
+      document.addEventListener("mousedown", handleJump);
+      canvas.addEventListener("touchstart", handleJump, { passive: false });
+
+      document.getElementById("coins").innerText = totalCoins;
+      loop();
+    };
   </script>
 </body>
 </html>
