@@ -2,165 +2,264 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Solit Legend - Flappy Coin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flappy Coin Game - Solit Legend</title>
   <style>
-    * { box-sizing: border-box; padding: 0; margin: 0; }
     html, body {
-      height: 100%;
+      margin: 0;
+      padding: 0;
       overflow: hidden;
-      font-family: Arial, sans-serif;
-      background: url('https://i.ibb.co/7gW7v7S/solit-bg.jpg') no-repeat center center fixed;
-      background-size: cover;
+      background-color: #70c5ce;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
     canvas {
       display: block;
       margin: auto;
-      position: absolute;
-      top: 0; left: 0; bottom: 0; right: 0;
+      background: url('https://i.postimg.cc/4dmVNVWW/oFmrtZR.jpg') repeat-x;
+      background-size: cover;
     }
-    #hud {
+    #wallet, #volumeControl {
       position: absolute;
-      top: 10px; left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-size: 1.2em;
-      background: rgba(0, 0, 0, 0.5);
-      padding: 10px 20px;
-      border-radius: 10px;
-    }
-    #buttons {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 10px;
-    }
-    .btn {
-      background: #673AB7;
-      color: white;
-      border: none;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
       padding: 10px 15px;
       border-radius: 8px;
-      font-size: 1em;
+      z-index: 2;
+    }
+    #wallet {
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
+    }
+    #volumeControl {
+      top: 10px;
+      right: 10px;
+      font-size: 14px;
+    }
+    #volumeSlider {
+      width: 100px;
+    }
+    #gameOverMenu {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7);
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      color: #fff;
+      display: none;
+      z-index: 3;
+    }
+    #gameOverMenu button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="hud">
-    Coins: <span id="coinCount">0</span>
+  <div id="wallet">Coins: <span id="coins">0</span></div>
+  <div id="volumeControl">
+    Music Volume: <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
   </div>
-  <canvas id="gameCanvas" width="360" height="640"></canvas>
-  <div id="buttons">
-    <button class="btn" onclick="restartGame()">Restart</button>
-    <button class="btn" onclick="location.href='https://solitlegend.github.io/SolitLegend/'">Back to Homepage</button>
+  <canvas id="game" width="480" height="640"></canvas>
+  <div id="gameOverMenu">
+    <h2>Game Over</h2>
+    <button id="restartBtn">Restart</button>
+    <button id="homeBtn">Go Back Home</button>
   </div>
+  <audio id="coinSound" src="https://www.fesliyanstudios.com/play-mp3/387" preload="auto"></audio>
+  <audio id="bgMusic" src="https://www.bensound.com/bensound-music/bensound-ukulele.mp3" autoplay loop></audio>
 
   <script>
-    const canvas = document.getElementById("gameCanvas");
+    const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
+    const coinSound = document.getElementById("coinSound");
+    const bgMusic = document.getElementById("bgMusic");
+    const volumeSlider = document.getElementById("volumeSlider");
+    const gameOverMenu = document.getElementById("gameOverMenu");
+    const restartBtn = document.getElementById("restartBtn");
+    const homeBtn = document.getElementById("homeBtn");
 
-    let bird = { x: 80, y: 150, width: 30, height: 30, gravity: 0.4, velocity: 0 };
-    let pipes = [], frame = 0, score = 0;
-    let coinLimitReached = false;
+    const pipeWidth = 60;
+    const pipeGap = 150;
+    const gravity = 0.25;
+    const jump = -7;
+    const pipeSpeed = 1;
 
-    const birdImg = new Image();
-    birdImg.src = "https://i.ibb.co/yYRhdGs/solit-bird.png";
+    let totalCoins = parseInt(localStorage.getItem('solitCoins')) || 0;
+    let sessionCoins = 0;
+
+    let bird = { x: 80, y: 250, width: 34, height: 34, velocity: 0 };
+    let pipes = [];
+    let coin = null;
+    let pipeCounter = 0;
+    let isGameOver = false;
+
+    const birdEmoji = "🐦";
+
+    volumeSlider.addEventListener("input", () => {
+      bgMusic.volume = volumeSlider.value;
+    });
+    bgMusic.volume = volumeSlider.value;
+
+    document.addEventListener("touchstart", () => {
+      bgMusic.play().catch(() => {});
+    }, { once: true });
+
+    restartBtn.onclick = function () {
+  totalCoins += sessionCoins;
+  localStorage.setItem("solitCoins", totalCoins);
+  document.getElementById("coins").innerText = totalCoins;
+
+  const userName = localStorage.getItem('solitName');
+  if (userName && sessionCoins > 0) {
+    fetch(https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins});
+  }
+
+  sessionCoins = 0;
+  bird.y = 250;
+  bird.velocity = 0;
+  pipes = [];
+  coin = null;
+  pipeCounter = 0;
+  isGameOver = false;
+  gameOverMenu.style.display = "none";
+};
+
+homeBtn.onclick = function () {
+  const userName = localStorage.getItem('solitName');
+  if (userName && sessionCoins > 0) {
+    fetch(https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins})
+      .then(() => {
+        sessionCoins = 0;
+        window.location.href = "https://solitlegend.github.io/SolitLegend/";
+      });
+  } else {
+    window.location.href = "https://solitlegend.github.io/SolitLegend/";
+  }
+};
+
 
     function drawBird() {
-      ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+      ctx.save();
+      ctx.translate(bird.x + bird.width, bird.y);
+      ctx.scale(-1, 1);
+      ctx.font = ${bird.width}px serif;
+      ctx.fillText(birdEmoji, 0, bird.height);
+      ctx.restore();
     }
 
     function drawPipes() {
-      pipes.forEach(p => {
-        ctx.fillStyle = "green";
-        ctx.fillRect(p.x, 0, 50, p.top);
-        ctx.fillRect(p.x, p.bottom, 50, canvas.height);
+      ctx.fillStyle = 'purple';
+      pipes.forEach(pipe => {
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, pipe.top + pipeGap, pipeWidth, canvas.height);
       });
     }
 
-    function updatePipes() {
-      if (frame % 90 === 0) {
-        let gap = 120;
-        let top = Math.floor(Math.random() * 200) + 50;
-        pipes.push({ x: canvas.width, top, bottom: top + gap });
+    function drawCoin() {
+      if (coin) {
+        ctx.beginPath();
+        ctx.fillStyle = 'gold';
+        ctx.arc(coin.x, coin.y, 16, 0, Math.PI * 2);
+        ctx.fill();
       }
-      pipes.forEach(p => p.x -= 2);
-      pipes = pipes.filter(p => p.x + 50 > 0);
-    }
-
-    function checkCollision() {
-      for (let p of pipes) {
-        if (
-          bird.x < p.x + 50 &&
-          bird.x + bird.width > p.x &&
-          (bird.y < p.top || bird.y + bird.height > p.bottom)
-        ) return true;
-      }
-      return bird.y + bird.height > canvas.height;
     }
 
     function updateGame() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      bird.velocity += bird.gravity;
-      bird.y += bird.velocity;
-      updatePipes();
-      drawPipes();
-      drawBird();
+      if (isGameOver) return;
 
-      if (checkCollision()) {
-        saveCoins(score);
-        alert("Game Over! Coins earned: " + score);
-        location.reload();
-        return;
+      bird.velocity += gravity;
+      bird.y += bird.velocity;
+
+      if (bird.y + bird.height > canvas.height || bird.y < 0) {
+        return endGame();
       }
 
-      pipes.forEach(p => {
-        if (p.x === bird.x) score++;
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+        let top = Math.floor(Math.random() * 250) + 30;
+        pipes.push({ x: canvas.width, top });
+
+        if (pipeCounter === 0 || pipeCounter % 4 === 0) {
+          coin = {
+            x: canvas.width + 60,
+            y: top + pipeGap / 2
+          };
+        }
+        pipeCounter++;
+      }
+
+      pipes.forEach((pipe, index) => {
+        pipe.x -= pipeSpeed;
+        if (pipe.x + pipeWidth < 0) {
+          pipes.splice(index, 1);
+        }
+        if (
+          bird.x < pipe.x + pipeWidth &&
+          bird.x + bird.width > pipe.x &&
+          (bird.y < pipe.top || bird.y + bird.height > pipe.top + pipeGap)
+        ) {
+          endGame();
+        }
       });
 
-      document.getElementById("coinCount").innerText = score;
-      frame++;
-      requestAnimationFrame(updateGame);
+      if (coin) {
+        coin.x -= pipeSpeed;
+
+        if (
+          bird.x < coin.x + 12 &&
+          bird.x + bird.width > coin.x - 12 &&
+          bird.y < coin.y + 12 &&
+          bird.y + bird.height > coin.y - 12
+        ) {
+          sessionCoins++;
+          document.getElementById("coins").innerText = totalCoins + sessionCoins;
+          coinSound.play();
+          coin = null;
+        }
+
+        if (coin && coin.x < -20) {
+          coin = null;
+        }
+      }
     }
 
-    function flap() {
-      bird.velocity = -6;
+    function endGame() {
+      isGameOver = true;
+      gameOverMenu.style.display = "block";
     }
 
-    function restartGame() {
-      bird.y = 150;
-      bird.velocity = 0;
-      pipes = [];
-      score = 0;
-      frame = 0;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPipes();
+      drawCoin();
+      drawBird();
     }
 
-    canvas.addEventListener("touchstart", flap);
-    canvas.addEventListener("mousedown", flap);
-
-    function saveCoins(coins) {
-      const today = new Date().toDateString();
-      const lastPlay = localStorage.getItem("lastPlayDate");
-      if (lastPlay === today) return;
-
-      const name = localStorage.getItem("playerName") || prompt("Enter your name:");
-      if (!name) return;
-
-      localStorage.setItem("playerName", name);
-      localStorage.setItem("lastPlayDate", today);
-
-      fetch("https://script.google.com/macros/s/AKfycbwPM7TjnRtzJbIxDDXZz8LEiFdAjGsDmwAgaLlgMCBrpvnsxC1iI3qBnlM_cFrzwLwx/exec", {
-        method: "POST",
-        mode: 'no-cors',
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, coins })
-      });
+    function loop() {
+      updateGame();
+      draw();
+      requestAnimationFrame(loop);
     }
 
-    updateGame();
+    function handleJump(e) {
+      e.preventDefault();
+      bird.velocity = jump;
+    }
+
+    document.addEventListener("keydown", handleJump);
+    document.addEventListener("mousedown", handleJump);
+    document.addEventListener("touchstart", handleJump, { passive: false });
+
+    document.getElementById("coins").innerText = totalCoins;
+    loop();
   </script>
 </body>
 </html>
