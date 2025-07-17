@@ -2,198 +2,165 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Solit Jump Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solit Legend - Flappy Coin</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { box-sizing: border-box; padding: 0; margin: 0; }
     html, body {
       height: 100%;
-      background: url('https://i.ibb.co/BZj2fs1/solit-bg.jpg') no-repeat center center fixed;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: url('https://i.ibb.co/7gW7v7S/solit-bg.jpg') no-repeat center center fixed;
       background-size: cover;
-      font-family: 'Segoe UI', sans-serif;
     }
     canvas {
       display: block;
       margin: auto;
-      background: transparent;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
     }
-    #wallet {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      padding: 8px 15px;
-      border-radius: 20px;
-      font-size: 16px;
-      z-index: 1000;
-    }
-    #gameOver {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #000000d3;
-      color: #fff;
-      padding: 20px;
-      border-radius: 20px;
-      text-align: center;
-      display: none;
-      z-index: 1000;
-    }
-    #gameOver button {
-      margin-top: 10px;
+    #hud {
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 1.2em;
+      background: rgba(0, 0, 0, 0.5);
       padding: 10px 20px;
-      border: none;
-      background: gold;
       border-radius: 10px;
-      font-size: 16px;
+    }
+    #buttons {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      background: #673AB7;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
+  <div id="hud">
+    Coins: <span id="coinCount">0</span>
+  </div>
+  <canvas id="gameCanvas" width="360" height="640"></canvas>
+  <div id="buttons">
+    <button class="btn" onclick="restartGame()">Restart</button>
+    <button class="btn" onclick="location.href='https://solitlegend.github.io/SolitLegend/'">Back to Homepage</button>
+  </div>
 
-<div id="wallet">💰 Coins: <span id="coinCount">0</span></div>
-<div id="gameOver">
-  <h2>Game Over</h2>
-  <p>You earned <span id="earned">0</span> coins</p>
-  <button onclick="restartGame()">Play Again</button>
-</div>
-<canvas id="gameCanvas" width="360" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-<script>
-  const canvas = document.getElementById("gameCanvas");
-  const ctx = canvas.getContext("2d");
+    let bird = { x: 80, y: 150, width: 30, height: 30, gravity: 0.4, velocity: 0 };
+    let pipes = [], frame = 0, score = 0;
+    let coinLimitReached = false;
 
-  const bird = { x: 50, y: 150, width: 30, height: 30, velocity: 0 };
-  const gravity = 0.40;
-  const jumpStrength = -6;
-  const pipes = [];
-  let score = 0;
-  let gameOver = false;
+    const birdImg = new Image();
+    birdImg.src = "https://i.ibb.co/yYRhdGs/solit-bird.png";
 
-  let totalCoins = parseInt(localStorage.getItem("totalCoins")) || 0;
-  let today = new Date().toLocaleDateString();
-  let todayCoins = JSON.parse(localStorage.getItem("todayCoins")) || { date: today, coins: 0 };
-
-  if (todayCoins.date !== today) {
-    todayCoins = { date: today, coins: 0 };
-  }
-
-  document.getElementById("coinCount").innerText = totalCoins;
-
-  function drawBird() {
-    ctx.fillStyle = "#ffcc00";
-    ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
-  }
-
-  function drawPipes() {
-    ctx.fillStyle = "#00cc66";
-    pipes.forEach(pipe => {
-      ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
-      ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipe.width, pipe.bottom);
-    });
-  }
-
-  function addPipe() {
-    const pipeGap = 140;
-    const pipeTop = Math.random() * (canvas.height - pipeGap - 100) + 50;
-    const pipeBottom = canvas.height - pipeTop - pipeGap;
-    pipes.push({ x: canvas.width, width: 50, top: pipeTop, bottom: pipeBottom });
-  }
-
-  function updatePipes() {
-    pipes.forEach(pipe => pipe.x -= 2);
-    if (pipes.length && pipes[0].x + pipes[0].width < 0) {
-      pipes.shift();
-      earnCoins(5);
+    function drawBird() {
+      ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
     }
-    if (pipes.length < 3 || pipes[pipes.length - 1].x < canvas.width - 200) {
-      addPipe();
-    }
-  }
 
-  function earnCoins(amount) {
-    if (todayCoins.coins + amount <= 500) {
-      totalCoins += amount;
-      todayCoins.coins += amount;
-      localStorage.setItem("totalCoins", totalCoins);
-      localStorage.setItem("todayCoins", JSON.stringify(todayCoins));
-      document.getElementById("coinCount").innerText = totalCoins;
-      document.getElementById("earned").innerText = amount;
-
-      let solitName = localStorage.getItem("solitName") || "Unknown";
-
-      fetch("https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec", {
-        method: "POST",
-        body: JSON.stringify({
-          name: solitName,
-          coins: amount,
-          reason: "Game",
-        }),
+    function drawPipes() {
+      pipes.forEach(p => {
+        ctx.fillStyle = "green";
+        ctx.fillRect(p.x, 0, 50, p.top);
+        ctx.fillRect(p.x, p.bottom, 50, canvas.height);
       });
     }
-  }
 
-  function detectCollision(pipe) {
-    const inX = bird.x + bird.width > pipe.x && bird.x < pipe.x + pipe.width;
-    const hitTop = bird.y < pipe.top;
-    const hitBottom = bird.y + bird.height > canvas.height - pipe.bottom;
-    return inX && (hitTop || hitBottom);
-  }
-
-  function endGame() {
-    gameOver = true;
-    document.getElementById("gameOver").style.display = "block";
-  }
-
-  function restartGame() {
-    bird.y = 150;
-    bird.velocity = 0;
-    pipes.length = 0;
-    addPipe();
-    gameOver = false;
-    document.getElementById("gameOver").style.display = "none";
-    loop();
-  }
-
-  function loop() {
-    if (gameOver) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    bird.velocity += gravity;
-    bird.y += bird.velocity;
-
-    if (bird.y + bird.height > canvas.height || bird.y < 0) {
-      endGame();
+    function updatePipes() {
+      if (frame % 90 === 0) {
+        let gap = 120;
+        let top = Math.floor(Math.random() * 200) + 50;
+        pipes.push({ x: canvas.width, top, bottom: top + gap });
+      }
+      pipes.forEach(p => p.x -= 2);
+      pipes = pipes.filter(p => p.x + 50 > 0);
     }
 
-    updatePipes();
-    pipes.forEach(pipe => {
-      if (detectCollision(pipe)) {
-        endGame();
+    function checkCollision() {
+      for (let p of pipes) {
+        if (
+          bird.x < p.x + 50 &&
+          bird.x + bird.width > p.x &&
+          (bird.y < p.top || bird.y + bird.height > p.bottom)
+        ) return true;
       }
-    });
+      return bird.y + bird.height > canvas.height;
+    }
 
-    drawPipes();
-    drawBird();
+    function updateGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      bird.velocity += bird.gravity;
+      bird.y += bird.velocity;
+      updatePipes();
+      drawPipes();
+      drawBird();
 
-    requestAnimationFrame(loop);
-  }
+      if (checkCollision()) {
+        saveCoins(score);
+        alert("Game Over! Coins earned: " + score);
+        location.reload();
+        return;
+      }
 
-  canvas.addEventListener("touchstart", () => {
-    if (!gameOver) bird.velocity = jumpStrength;
-  });
+      pipes.forEach(p => {
+        if (p.x === bird.x) score++;
+      });
 
-  // Optional: for mouse/tap testing
-  // canvas.addEventListener("mousedown", () => {
-  //   if (!gameOver) bird.velocity = jumpStrength;
-  // });
+      document.getElementById("coinCount").innerText = score;
+      frame++;
+      requestAnimationFrame(updateGame);
+    }
 
-  addPipe();
-  loop();
-</script>
+    function flap() {
+      bird.velocity = -6;
+    }
 
+    function restartGame() {
+      bird.y = 150;
+      bird.velocity = 0;
+      pipes = [];
+      score = 0;
+      frame = 0;
+    }
+
+    canvas.addEventListener("touchstart", flap);
+    canvas.addEventListener("mousedown", flap);
+
+    function saveCoins(coins) {
+      const today = new Date().toDateString();
+      const lastPlay = localStorage.getItem("lastPlayDate");
+      if (lastPlay === today) return;
+
+      const name = localStorage.getItem("playerName") || prompt("Enter your name:");
+      if (!name) return;
+
+      localStorage.setItem("playerName", name);
+      localStorage.setItem("lastPlayDate", today);
+
+      fetch("https://script.google.com/macros/s/AKfycbwPM7TjnRtzJbIxDDXZz8LEiFdAjGsDmwAgaLlgMCBrpvnsxC1iI3qBnlM_cFrzwLwx/exec", {
+        method: "POST",
+        mode: 'no-cors',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, coins })
+      });
+    }
+
+    updateGame();
+  </script>
 </body>
 </html>
