@@ -120,7 +120,7 @@
 
   const userName = localStorage.getItem('solitName');
   if (userName && sessionCoins > 0) {
-    fetch(https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins});
+    fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`);
   }
 
   sessionCoins = 0;
@@ -136,7 +136,7 @@
 homeBtn.onclick = function () {
   const userName = localStorage.getItem('solitName');
   if (userName && sessionCoins > 0) {
-    fetch(https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins})
+    fetch(`https://script.google.com/macros/s/AKfycbz5WQhywSaywPBxHJTUYdoHdqRoKLwUTxbTqOdc1xiHwcCnyM5DHWFM5wYuOUxpmCbs/exec?name=${encodeURIComponent(userName)}&action=add&coins=${sessionCoins}`)
       .then(() => {
         sessionCoins = 0;
         window.location.href = "https://solitlegend.github.io/SolitLegend/";
@@ -151,7 +151,7 @@ homeBtn.onclick = function () {
       ctx.save();
       ctx.translate(bird.x + bird.width, bird.y);
       ctx.scale(-1, 1);
-      ctx.font = ${bird.width}px serif;
+      ctx.font = `${bird.width}px serif`;
       ctx.fillText(birdEmoji, 0, bird.height);
       ctx.restore();
     }
